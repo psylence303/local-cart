@@ -3,9 +3,65 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { GroceryItem } from '../types';
+import { GroceryItem, Category, DEFAULT_CATEGORIES, DEFAULT_SHOPS } from '../types';
 
 const STORAGE_KEY = 'grocery_list_items';
+const CATEGORIES_KEY = 'grocery_categories';
+const SHOPS_KEY = 'grocery_shops';
+
+/**
+ * Loads custom or default categories from local storage
+ */
+export function loadCategories(): Category[] {
+  try {
+    const data = localStorage.getItem(CATEGORIES_KEY);
+    if (!data) return DEFAULT_CATEGORIES;
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Failed to load categories from local storage:', error);
+    return DEFAULT_CATEGORIES;
+  }
+}
+
+/**
+ * Saves custom categories to local storage
+ */
+export function saveCategories(categories: Category[]): boolean {
+  try {
+    localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
+    return true;
+  } catch (error) {
+    console.error('Failed to save categories to local storage:', error);
+    return false;
+  }
+}
+
+/**
+ * Loads custom or default shops from local storage
+ */
+export function loadShops(): string[] {
+  try {
+    const data = localStorage.getItem(SHOPS_KEY);
+    if (!data) return DEFAULT_SHOPS;
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Failed to load shops from local storage:', error);
+    return DEFAULT_SHOPS;
+  }
+}
+
+/**
+ * Saves custom shops to local storage
+ */
+export function saveShops(shops: string[]): boolean {
+  try {
+    localStorage.setItem(SHOPS_KEY, JSON.stringify(shops));
+    return true;
+  } catch (error) {
+    console.error('Failed to save shops to local storage:', error);
+    return false;
+  }
+}
 
 /**
  * Loads grocery items from local storage

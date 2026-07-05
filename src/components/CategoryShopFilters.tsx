@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { Search, SlidersHorizontal, ArrowUpDown, X, ListFilter, Tag, Store } from 'lucide-react';
-import { GroceryFilter, GrocerySort, SortField, DEFAULT_CATEGORIES, DEFAULT_SHOPS } from '../types';
+import { GroceryFilter, GrocerySort, SortField, Category } from '../types';
 
 interface CategoryShopFiltersProps {
   filter: GroceryFilter;
@@ -14,6 +14,8 @@ interface CategoryShopFiltersProps {
   setSort: (s: GrocerySort) => void;
   uniqueCategoriesInList: string[];
   uniqueShopsInList: string[];
+  categories: Category[];
+  shops: string[];
 }
 
 export default function CategoryShopFilters({
@@ -23,17 +25,19 @@ export default function CategoryShopFilters({
   setSort,
   uniqueCategoriesInList,
   uniqueShopsInList,
+  categories,
+  shops,
 }: CategoryShopFiltersProps) {
 
   // Build list of categories to show in filter chips (default + whatever's actually in list)
   const availableCategories = ['All', ...Array.from(new Set([
-    ...DEFAULT_CATEGORIES.map(c => c.name),
+    ...categories.map(c => c.name),
     ...uniqueCategoriesInList
   ].filter(Boolean)))];
 
   // Build list of shops to show in filter chips
   const availableShops = ['All', ...Array.from(new Set([
-    ...DEFAULT_SHOPS,
+    ...shops,
     ...uniqueShopsInList
   ].filter(Boolean)))];
 

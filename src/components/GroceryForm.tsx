@@ -5,16 +5,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Check, ShoppingBag, Plus, Minus, Tag, Store, Sparkles } from 'lucide-react';
-import { GroceryItem, DEFAULT_CATEGORIES, DEFAULT_SHOPS } from '../types';
+import { GroceryItem, Category } from '../types';
 import CameraCapture from './CameraCapture';
 
 interface GroceryFormProps {
   onClose: () => void;
   onSubmit: (data: Omit<GroceryItem, 'id' | 'completed' | 'createdAt'>) => void;
   editingItem?: GroceryItem | null;
+  categories: Category[];
+  shops: string[];
 }
 
-export default function GroceryForm({ onClose, onSubmit, editingItem }: GroceryFormProps) {
+export default function GroceryForm({ onClose, onSubmit, editingItem, categories, shops }: GroceryFormProps) {
   const [title, setTitle] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [description, setDescription] = useState('');
@@ -45,7 +47,7 @@ export default function GroceryForm({ onClose, onSubmit, editingItem }: GroceryF
 
       // Check if editing item category is standard or custom
       if (editingItem.category) {
-        const isStandardCat = DEFAULT_CATEGORIES.some(c => c.name === editingItem.category);
+        const isStandardCat = categories.some(c => c.name === editingItem.category);
         if (isStandardCat) {
           setCategory(editingItem.category);
           setIsCustomCategory(false);
@@ -60,7 +62,7 @@ export default function GroceryForm({ onClose, onSubmit, editingItem }: GroceryF
 
       // Check if editing item shop is standard or custom
       if (editingItem.shop) {
-        const isStandardShp = DEFAULT_SHOPS.includes(editingItem.shop);
+        const isStandardShp = shops.includes(editingItem.shop);
         if (isStandardShp) {
           setShop(editingItem.shop);
           setIsCustomShop(false);
@@ -240,7 +242,7 @@ export default function GroceryForm({ onClose, onSubmit, editingItem }: GroceryF
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold text-slate-700 focus:outline-none focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
             >
               <option value="">No Category</option>
-              {DEFAULT_CATEGORIES.map((cat) => (
+              {categories.map((cat) => (
                 <option key={cat.name} value={cat.name}>
                   {cat.name}
                 </option>
@@ -273,7 +275,7 @@ export default function GroceryForm({ onClose, onSubmit, editingItem }: GroceryF
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold text-slate-700 focus:outline-none focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
             >
               <option value="">No Store Assigned</option>
-              {DEFAULT_SHOPS.map((shp) => (
+              {shops.map((shp) => (
                 <option key={shp} value={shp}>
                   🏬 {shp}
                 </option>

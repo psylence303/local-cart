@@ -29,7 +29,12 @@ export interface GrocerySort {
   order: SortOrder;
 }
 
-export const DEFAULT_CATEGORIES = [
+export interface Category {
+  name: string;
+  color: string;
+}
+
+export const DEFAULT_CATEGORIES: Category[] = [
   { name: 'Fruits & Veggies 🍎', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   { name: 'Dairy & Eggs 🥛', color: 'bg-blue-50 text-blue-700 border-blue-200' },
   { name: 'Bakery 🍞', color: 'bg-amber-50 text-amber-700 border-amber-200' },

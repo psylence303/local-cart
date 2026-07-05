@@ -4,17 +4,21 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, RotateCcw, Download, Upload, ClipboardList, ChevronDown, ChevronUp, ShoppingBasket, Info } from 'lucide-react';
-import { GroceryItem, GroceryFilter, GrocerySort } from './types';
-import { loadGroceryItems, saveGroceryItems } from './utils/db';
+import { Plus, Trash2, RotateCcw, Download, Upload, ClipboardList, ChevronDown, ChevronUp, ShoppingBasket, Info, Settings } from 'lucide-react';
+import { GroceryItem, GroceryFilter, GrocerySort, Category } from './types';
+import { loadGroceryItems, saveGroceryItems, loadCategories, saveCategories, loadShops, saveShops } from './utils/db';
 import PhoneContainer from './components/PhoneContainer';
 import StatsBanner from './components/StatsBanner';
 import CategoryShopFilters from './components/CategoryShopFilters';
 import GroceryItemCard from './components/GroceryItemCard';
 import GroceryForm from './components/GroceryForm';
+import SettingsPage from './components/SettingsPage';
 
 export default function App() {
   const [items, setItems] = useState<GroceryItem[]>([]);
+  const [categories, setCategoriesState] = useState<Category[]>([]);
+  const [shops, setShopsState] = useState<string[]>([]);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [filter, setFilter] = useState<GroceryFilter>({ category: 'all', shop: 'all', search: '' });
   const [sort, setSort] = useState<GrocerySort>({ field: 'createdAt', order: 'desc' });
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -23,9 +27,20 @@ export default function App() {
 
   // Load items on mount
   useEffect(() => {
-    const loaded = loadGroceryItems();
-    setItems(loaded);
+    setItems(loadGroceryItems());
+    setCategoriesState(loadCategories());
+    setShopsState(loadShops());
   }, []);
+
+  const handleUpdateCategories = (newCats: Category[]) => {
+    setCategoriesState(newCats);
+    saveCategories(newCats);
+  };
+
+  const handleUpdateShops = (newShops: string[]) => {
+    setShopsState(newShops);
+    saveShops(newShops);
+  };
 
   // Save items when state changes
   const updateItemsAndSave = (newItems: GroceryItem[]) => {
@@ -215,6 +230,20 @@ export default function App() {
   const totalCount = items.length;
   const completedCount = items.filter((i) => i.completed).length;
 
+  if (isSettingsOpen) {
+    return (
+      <PhoneContainer>
+        <SettingsPage
+          categories={categories}
+          setCategories={handleUpdateCategories}
+          shops={shops}
+          setShops={handleUpdateShops}
+          onClose={() => setIsSettingsOpen(false)}
+        />
+      </PhoneContainer>
+    );
+  }
+
   return (
     <PhoneContainer>
       
@@ -259,6 +288,14 @@ export default function App() {
             <RotateCcw className="w-4 h-4" />
           </button>
 
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            title="Open Settings"
+            className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-xl transition-all cursor-pointer ml-1"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+
           {completedCount > 0 && (
             <button
               onClick={handleClearCompleted}
@@ -282,6 +319,8 @@ export default function App() {
         setSort={setSort}
         uniqueCategoriesInList={uniqueCategoriesInList}
         uniqueShopsInList={uniqueShopsInList}
+        categories={categories}
+        shops={shops}
       />
 
       {/* Main Lists Container - Scrollable */}
@@ -393,6 +432,8 @@ export default function App() {
             }}
             onSubmit={editingItem ? handleUpdateItem : handleAddItem}
             editingItem={editingItem}
+            categories={categories}
+            shops={shops}
           />
         </>
       )}
