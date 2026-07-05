@@ -62,8 +62,7 @@ export default function CameraCapture({ onPhotoSelected, currentPhotoUrl, onClea
       }
     } catch (err: any) {
       console.error('Error starting camera:', err);
-      setCameraError('Could not access camera. Please make sure camera permission is granted.');
-      setActiveTab('preset');
+      setCameraError('Could not access camera. Please ensure camera permissions are granted. If you are using the AI Studio preview, you may need to open the app in a new tab.');
     }
   };
 
