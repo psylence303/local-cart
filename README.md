@@ -24,7 +24,7 @@ Make sure you have the following installed on your development machine:
 Capacitor is the modern, official web-to-native bridge by Ionic. It is the easiest way to turn this React project into a true Android application.
 
 #### 1. Install Dependencies
-Before running or building the project on your machine, you must download the required node packages:
+Before running or building the project on your machine, you must download the required node packages (including Capacitor):
 ```bash
 npm install
 ```
@@ -35,26 +35,19 @@ Run the build script to compile the React and Tailwind code into the standard st
 npm run build
 ```
 
-#### 3. Install Capacitor Packages
-Install the core Capacitor CLI and the Android platform package in your workspace:
-```bash
-npm install @capacitor/core @capacitor/cli
-```
-
-#### 4. Initialize Capacitor Config
+#### 3. Initialize Capacitor Config
 Initialize Capacitor with your app name and custom Android package ID:
 ```bash
 npx cap init "LocalCart" "com.localcart.app" --web-dir=dist
 ```
 
-#### 5. Add the Android Platform
-Install the Capacitor Android runner and add the platform folder:
+#### 4. Add the Android Platform
+Add the Android platform folder to your project:
 ```bash
-npm install @capacitor/android
 npx cap add android
 ```
 
-#### 6. Open in Android Studio & Generate APK
+#### 5. Open in Android Studio & Generate APK
 To compile the actual `.apk` file, sync your compiled assets with the Android directory and open the project inside Android Studio:
 ```bash
 # Sync files
