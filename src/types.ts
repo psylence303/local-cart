@@ -12,6 +12,7 @@ export interface GroceryItem {
   shop?: string;
   photoUrl?: string; // stored as compressed base64 or public CDN placeholder
   completed: boolean;
+  notNeeded?: boolean;
   createdAt: number;
 }
 

@@ -24,6 +24,7 @@ export default function App() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<GroceryItem | null>(null);
   const [isCompletedCollapsed, setIsCompletedCollapsed] = useState(false);
+  const [isNotNeededCollapsed, setIsNotNeededCollapsed] = useState(false);
 
   // Load items on mount
   useEffect(() => {
@@ -54,6 +55,7 @@ export default function App() {
       ...data,
       id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       completed: false,
+      notNeeded: data.quantity === 0,
       createdAt: Date.now(),
     };
     updateItemsAndSave([newItem, ...items]);
@@ -65,7 +67,12 @@ export default function App() {
 
     const updatedItems = items.map((item) =>
       item.id === editingItem.id
-        ? { ...item, ...data } // Preserve completed state and id/creation date
+        ? { 
+            ...item, 
+            ...data,
+            notNeeded: data.quantity === 0,
+            completed: data.quantity === 0 ? false : item.completed
+          }
         : item
     );
 
@@ -75,17 +82,36 @@ export default function App() {
 
   // Toggle item checked state
   const handleToggleComplete = (id: string) => {
-    const updatedItems = items.map((item) =>
-      item.id === id ? { ...item, completed: !item.completed } : item
-    );
+    const updatedItems = items.map((item) => {
+      if (item.id === id) {
+        if (item.notNeeded) return item; // No-op if it's not needed
+        return { ...item, completed: !item.completed };
+      }
+      return item;
+    });
     updateItemsAndSave(updatedItems);
   };
 
   // Quick increment/decrement quantity directly on card
   const handleUpdateQuantity = (id: string, newQty: number) => {
-    const updatedItems = items.map((item) =>
-      item.id === id ? { ...item, quantity: newQty } : item
-    );
+    const updatedItems = items.map((item) => {
+      if (item.id === id) {
+        if (newQty <= 0) {
+          // Move to Not Needed status automatically
+          return { ...item, quantity: 0, notNeeded: true, completed: false };
+        } else {
+          // If increasing from 0 (or changing quantity when it was Not Needed), move back to "To Buy"
+          const wasNotNeeded = item.notNeeded;
+          return {
+            ...item,
+            quantity: newQty,
+            notNeeded: false,
+            completed: wasNotNeeded ? false : item.completed
+          };
+        }
+      }
+      return item;
+    });
     updateItemsAndSave(updatedItems);
   };
 
@@ -95,16 +121,22 @@ export default function App() {
     setIsFormOpen(true);
   };
 
-  // Delete an item
+  // Delete an item - now flags as "Not needed" and resets quantity/completed
   const handleDeleteItem = (id: string) => {
-    const updatedItems = items.filter((item) => item.id !== id);
+    const updatedItems = items.map((item) =>
+      item.id === id ? { ...item, quantity: 0, notNeeded: true, completed: false } : item
+    );
     updateItemsAndSave(updatedItems);
   };
 
-  // Clear all checked/completed items
+  // Clear all checked/completed items by flagging them as "Not Needed"
   const handleClearCompleted = () => {
-    const activeItems = items.filter((item) => !item.completed);
-    updateItemsAndSave(activeItems);
+    const updatedItems = items.map((item) =>
+      item.completed && !item.notNeeded
+        ? { ...item, quantity: 0, notNeeded: true, completed: false }
+        : item
+    );
+    updateItemsAndSave(updatedItems);
   };
 
   // Wipe list and load demo preset
@@ -219,16 +251,17 @@ export default function App() {
       });
   }, [items, filter, sort]);
 
-  // Group into Active vs Checked off
-  const { activeItems, completedItems } = useMemo(() => {
+  // Group into Active, Checked off, and Not Needed
+  const { activeItems, completedItems, notNeededItems } = useMemo(() => {
     return {
-      activeItems: processedItems.filter((i) => !i.completed),
-      completedItems: processedItems.filter((i) => i.completed),
+      activeItems: processedItems.filter((i) => !i.completed && !i.notNeeded),
+      completedItems: processedItems.filter((i) => i.completed && !i.notNeeded),
+      notNeededItems: processedItems.filter((i) => i.notNeeded),
     };
   }, [processedItems]);
 
-  const totalCount = items.length;
-  const completedCount = items.filter((i) => i.completed).length;
+  const totalCount = items.filter((i) => !i.notNeeded).length;
+  const completedCount = items.filter((i) => i.completed && !i.notNeeded).length;
 
   if (isSettingsOpen) {
     return (
@@ -384,6 +417,39 @@ export default function App() {
                 {!isCompletedCollapsed && (
                   <div className="flex flex-col gap-3">
                     {completedItems.map((item) => (
+                      <GroceryItemCard
+                        key={item.id}
+                        item={item}
+                        onToggleComplete={handleToggleComplete}
+                        onUpdateQuantity={handleUpdateQuantity}
+                        onEdit={handleStartEdit}
+                        onDelete={handleDeleteItem}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Not Needed Items Section */}
+            {notNeededItems.length > 0 && (
+              <div className="flex flex-col gap-2.5 mt-2">
+                <button
+                  onClick={() => setIsNotNeededCollapsed(!isNotNeededCollapsed)}
+                  className="flex items-center justify-between text-[10px] font-bold text-slate-400 tracking-wider uppercase select-none cursor-pointer group"
+                >
+                  <span className="flex items-center gap-1 group-hover:text-slate-600 transition-colors">
+                    Not Needed ({notNeededItems.length})
+                  </span>
+                  <div className="flex items-center gap-1 text-slate-400 group-hover:text-slate-600 transition-colors">
+                    <span>{isNotNeededCollapsed ? 'Show' : 'Hide'}</span>
+                    {isNotNeededCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+                  </div>
+                </button>
+
+                {!isNotNeededCollapsed && (
+                  <div className="flex flex-col gap-3">
+                    {notNeededItems.map((item) => (
                       <GroceryItemCard
                         key={item.id}
                         item={item}

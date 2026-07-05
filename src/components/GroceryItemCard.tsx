@@ -31,10 +31,8 @@ export default function GroceryItemCard({
 
   const handleDecrease = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (item.quantity > 1) {
+    if (item.quantity > 0) {
       onUpdateQuantity(item.id, item.quantity - 1);
-    } else {
-      onDelete(item.id);
     }
   };
 
@@ -47,21 +45,30 @@ export default function GroceryItemCard({
     <>
       <div 
         className={`bg-white border rounded-3xl p-4 flex gap-4 transition-all duration-300 relative ${
-          item.completed
+          item.notNeeded
+            ? 'border-slate-200/40 bg-slate-100/30 opacity-50 shadow-none'
+            : item.completed
             ? 'border-slate-200/60 bg-slate-100/50 opacity-60 shadow-none'
             : 'border-slate-200/80 shadow-xs hover:shadow-md hover:border-teal-100'
         }`}
       >
         {/* Toggle Circle Checkbox */}
         <button
-          onClick={() => onToggleComplete(item.id)}
-          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center cursor-pointer shrink-0 mt-1 transition-all ${
-            item.completed
+          onClick={() => !item.notNeeded && onToggleComplete(item.id)}
+          disabled={item.notNeeded}
+          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-1 transition-all ${
+            item.notNeeded
+              ? 'bg-red-50 border-red-300 text-red-500 scale-100 cursor-not-allowed'
+              : item.completed
               ? 'bg-teal-500 border-teal-500 text-white scale-105'
               : 'border-slate-300 hover:border-teal-500 hover:bg-teal-50/50'
           }`}
         >
-          {item.completed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+          {item.notNeeded ? (
+            <X className="w-3.5 h-3.5 stroke-[3]" />
+          ) : item.completed ? (
+            <Check className="w-3.5 h-3.5 stroke-[3]" />
+          ) : null}
         </button>
 
         {/* Info Column */}
@@ -70,9 +77,11 @@ export default function GroceryItemCard({
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <h3 
-                onClick={() => onToggleComplete(item.id)}
+                onClick={() => !item.notNeeded && onToggleComplete(item.id)}
                 className={`text-slate-900 font-bold text-sm tracking-tight cursor-pointer break-words line-clamp-2 ${
                   item.completed ? 'line-through text-slate-400 font-medium' : ''
+                } ${
+                  item.notNeeded ? 'text-slate-400 font-medium' : ''
                 }`}
               >
                 {item.title}
@@ -80,7 +89,7 @@ export default function GroceryItemCard({
               
               {item.description && (
                 <p className={`text-xs mt-0.5 break-words line-clamp-2 ${
-                  item.completed ? 'text-slate-400' : 'text-slate-500'
+                  item.completed || item.notNeeded ? 'text-slate-400' : 'text-slate-500'
                 }`}>
                   {item.description}
                 </p>
@@ -91,7 +100,10 @@ export default function GroceryItemCard({
             <div className="flex items-center gap-1.5 bg-slate-100/80 border border-slate-200/40 p-1 rounded-2xl shrink-0 select-none">
               <button
                 onClick={handleDecrease}
-                className="w-5 h-5 rounded-full bg-white flex items-center justify-center text-slate-600 hover:text-red-500 hover:bg-red-50 active:scale-90 transition-all cursor-pointer border border-slate-200/50 shadow-xs"
+                disabled={item.quantity === 0}
+                className={`w-5 h-5 rounded-full bg-white flex items-center justify-center text-slate-600 hover:text-red-500 hover:bg-red-50 active:scale-90 transition-all cursor-pointer border border-slate-200/50 shadow-xs ${
+                  item.quantity === 0 ? 'opacity-40 cursor-not-allowed hover:bg-white hover:text-slate-600' : ''
+                }`}
               >
                 <Minus className="w-2.5 h-2.5" />
               </button>

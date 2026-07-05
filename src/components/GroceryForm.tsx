@@ -78,7 +78,7 @@ export default function GroceryForm({ onClose, onSubmit, editingItem, categories
   }, [editingItem]);
 
   const handleQuantityMinus = () => {
-    if (quantity > 1) setQuantity(quantity - 1);
+    if (quantity > 0) setQuantity(quantity - 1);
   };
 
   const handleQuantityPlus = () => {
