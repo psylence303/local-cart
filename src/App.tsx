@@ -13,6 +13,7 @@ import CategoryShopFilters from './components/CategoryShopFilters';
 import GroceryItemCard from './components/GroceryItemCard';
 import GroceryForm from './components/GroceryForm';
 import SettingsPage from './components/SettingsPage';
+import BackupModal from './components/BackupModal';
 
 export default function App() {
   const [items, setItems] = useState<GroceryItem[]>([]);
@@ -22,6 +23,7 @@ export default function App() {
   const [filter, setFilter] = useState<GroceryFilter>({ category: 'all', shop: 'all', search: '' });
   const [sort, setSort] = useState<GrocerySort>({ field: 'createdAt', order: 'desc' });
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<GroceryItem | null>(null);
   const [isCompletedCollapsed, setIsCompletedCollapsed] = useState(false);
   const [isNotNeededCollapsed, setIsNotNeededCollapsed] = useState(false);
@@ -149,17 +151,7 @@ export default function App() {
 
   // Export items as local JSON backup
   const handleExportBackup = () => {
-    try {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(items, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `grocery_list_backup_${new Date().toISOString().split('T')[0]}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-    } catch (err) {
-      alert('Failed to export list backup.');
-    }
+    setIsExportOpen(true);
   };
 
   // Import items from a local JSON backup file
@@ -503,6 +495,13 @@ export default function App() {
           />
         </>
       )}
+
+      {/* Backup/Export Modal */}
+      <BackupModal
+        isOpen={isExportOpen}
+        onClose={() => setIsExportOpen(false)}
+        items={items}
+      />
 
     </PhoneContainer>
   );
