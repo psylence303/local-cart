@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Image as ImageIcon, FileUp, Sparkles, RefreshCw, Check, X, AlertTriangle } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Camera as CameraIcon, Image as ImageIcon, FileUp, Sparkles, RefreshCw, Check, X, AlertTriangle } from 'lucide-react';
 import { compressImage } from '../utils/db';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 interface CameraCaptureProps {
   onPhotoSelected: (base64Data: string) => void;
@@ -30,141 +31,38 @@ const PRESET_EMOJIS = [
 
 export default function CameraCapture({ onPhotoSelected, currentPhotoUrl, onClear }: CameraCaptureProps) {
   const [activeTab, setActiveTab] = useState<'camera' | 'upload' | 'preset'>('preset');
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   
-  const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const nativeCameraInputRef = useRef<HTMLInputElement>(null);
 
-  const handleNativeCameraCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const handleCapacitorCamera = async () => {
+    setCameraError(null);
     setIsProcessing(true);
     try {
-      const compressed = await compressImage(file, 250, 0.75);
-      onPhotoSelected(compressed);
-      setCapturedImage(compressed);
-    } catch (err) {
-      console.error('Error in native camera capture:', err);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Stop camera stream on unmount
-  useEffect(() => {
-    return () => {
-      stopCamera();
-    };
-  }, [cameraStream]);
-
-  const startCamera = async () => {
-    setCameraError(null);
-    setCapturedImage(null);
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setCameraError('Camera access is not supported by your browser or environment. Try opening the app in a new tab.');
-      return;
-    }
-
-    try {
-      // First, try with rear camera (environment) which is ideal for grocery tracking
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } },
-        audio: false
+      // Triggers native Android Camera intent which handles requesting permissions and taking the photo natively
+      const photo = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Camera
       });
-      setCameraStream(stream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play().catch(err => {
-          console.error("Video play failed:", err);
-        });
+      
+      if (photo && photo.dataUrl) {
+        const compressed = await compressImage(photo.dataUrl, 250, 0.75);
+        onPhotoSelected(compressed);
+        setCapturedImage(compressed);
       }
     } catch (err: any) {
-      console.warn('Failed to start camera with environment constraints, trying fallback video: true...', err);
-      try {
-        // Fallback: request any video stream (this works on desktops and standard webcams)
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: false
-        });
-        setCameraStream(stream);
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(e => {
-            console.error("Video play failed on fallback stream:", e);
-          });
-        }
-      } catch (fallbackErr: any) {
-        console.error('All camera initialization attempts failed:', fallbackErr);
-        let errorMsg = 'Could not access camera. ';
-        
-        if (fallbackErr.name === 'NotAllowedError' || fallbackErr.name === 'PermissionDeniedError') {
-          errorMsg += 'Camera permission was denied. Please allow camera access in your browser settings and retry.';
-        } else if (fallbackErr.name === 'NotFoundError' || fallbackErr.name === 'DevicesNotFoundError') {
-          errorMsg += 'No camera hardware found on this device.';
-        } else if (fallbackErr.name === 'NotReadableError' || fallbackErr.name === 'TrackStartError') {
-          errorMsg += 'Camera is currently in use by another app or browser tab.';
-        } else {
-          errorMsg += `${fallbackErr.message || fallbackErr.name || 'Unknown error'}. Please ensure permissions are granted and open the app in a new tab.`;
-        }
-        setCameraError(errorMsg);
+      console.error('Error with Capacitor camera:', err);
+      // Ignore user cancellation
+      if (err.message && err.message.toLowerCase().includes('cancel')) {
+        return;
       }
-    }
-  };
-
-  const stopCamera = () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-      setCameraStream(null);
-    }
-  };
-
-  const handleTabChange = (tab: 'camera' | 'upload' | 'preset') => {
-    setActiveTab(tab);
-    if (tab === 'camera') {
-      startCamera();
-    } else {
-      stopCamera();
-    }
-  };
-
-  const capturePhoto = () => {
-    if (videoRef.current && cameraStream) {
-      try {
-        const video = videoRef.current;
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 480;
-        
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const rawBase64 = canvas.toDataURL('image/jpeg', 0.85);
-          
-          setIsProcessing(true);
-          compressImage(rawBase64, 250, 0.7)
-            .then(compressed => {
-              setCapturedImage(compressed);
-              onPhotoSelected(compressed);
-              stopCamera();
-            })
-            .catch(err => {
-              console.error('Compression failed:', err);
-              setCapturedImage(rawBase64);
-              onPhotoSelected(rawBase64);
-            })
-            .finally(() => {
-              setIsProcessing(false);
-            });
-        }
-      } catch (err) {
-        console.error('Failed to capture from video:', err);
-      }
+      setCameraError(err.message || 'Could not access native camera. Please grant permission in Android settings.');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -184,23 +82,20 @@ export default function CameraCapture({ onPhotoSelected, currentPhotoUrl, onClea
     }
   };
 
-  // Turn emoji into a high quality avatar / vector image
+  // Preset generator
   const handleSelectPreset = (emoji: string) => {
     try {
-      // Draw emoji onto canvas to create a custom beautifully colored icon
       const canvas = document.createElement('canvas');
       canvas.width = 120;
       canvas.height = 120;
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        // Gradient background
         const gradient = ctx.createLinearGradient(0, 0, 120, 120);
-        gradient.addColorStop(0, '#f0fdf4'); // Soft teal
+        gradient.addColorStop(0, '#f0fdf4');
         gradient.addColorStop(1, '#ccfbf1');
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, 120, 120);
 
-        // Render emoji centered
         ctx.font = '72px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -221,15 +116,14 @@ export default function CameraCapture({ onPhotoSelected, currentPhotoUrl, onClea
           <ImageIcon className="w-4 h-4 text-slate-500" />
           Add Photo (Optional)
         </span>
-        {currentPhotoUrl && (
+        {(currentPhotoUrl || capturedImage) && (
           <button
             type="button"
             onClick={() => {
               onClear();
               setCapturedImage(null);
-              stopCamera();
             }}
-            className="text-xs text-red-500 font-medium hover:text-red-600 flex items-center gap-1 transition-colors"
+            className="text-xs text-red-500 font-medium hover:text-red-600 flex items-center gap-1 transition-colors cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
             Remove Photo
@@ -241,8 +135,8 @@ export default function CameraCapture({ onPhotoSelected, currentPhotoUrl, onClea
       <div className="grid grid-cols-3 gap-1.5 bg-slate-200/60 p-1 rounded-xl text-xs font-semibold text-slate-600">
         <button
           type="button"
-          onClick={() => handleTabChange('preset')}
-          className={`py-1.5 px-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+          onClick={() => setActiveTab('preset')}
+          className={`py-1.5 px-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
             activeTab === 'preset' ? 'bg-white text-slate-900 shadow-xs' : 'hover:text-slate-900'
           }`}
         >
@@ -251,18 +145,18 @@ export default function CameraCapture({ onPhotoSelected, currentPhotoUrl, onClea
         </button>
         <button
           type="button"
-          onClick={() => handleTabChange('camera')}
-          className={`py-1.5 px-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+          onClick={() => setActiveTab('camera')}
+          className={`py-1.5 px-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
             activeTab === 'camera' ? 'bg-white text-slate-900 shadow-xs' : 'hover:text-slate-900'
           }`}
         >
-          <Camera className="w-3.5 h-3.5" />
+          <CameraIcon className="w-3.5 h-3.5" />
           Camera
         </button>
         <button
           type="button"
-          onClick={() => handleTabChange('upload')}
-          className={`py-1.5 px-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+          onClick={() => setActiveTab('upload')}
+          className={`py-1.5 px-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
             activeTab === 'upload' ? 'bg-white text-slate-900 shadow-xs' : 'hover:text-slate-900'
           }`}
         >
@@ -276,14 +170,14 @@ export default function CameraCapture({ onPhotoSelected, currentPhotoUrl, onClea
         {isProcessing && (
           <div className="absolute inset-0 bg-white/85 z-20 flex flex-col items-center justify-center gap-2">
             <RefreshCw className="w-6 h-6 text-teal-600 animate-spin" />
-            <span className="text-xs text-slate-600 font-medium">Compressing photo...</span>
+            <span className="text-xs text-slate-600 font-medium">Processing photo...</span>
           </div>
         )}
 
         {/* Tab content: PRESET */}
         {activeTab === 'preset' && (
           <div className="p-3 w-full flex flex-col items-center">
-            {currentPhotoUrl ? (
+            {currentPhotoUrl && !capturedImage ? (
               <div className="flex flex-col items-center gap-2.5 py-1">
                 <img
                   src={currentPhotoUrl}
@@ -306,7 +200,7 @@ export default function CameraCapture({ onPhotoSelected, currentPhotoUrl, onClea
                       key={emoji.name}
                       type="button"
                       onClick={() => handleSelectPreset(emoji.char)}
-                      className="aspect-square text-2xl hover:scale-115 active:scale-95 transition-transform flex items-center justify-center bg-white border border-slate-200 shadow-xs rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/50"
+                      className="aspect-square text-2xl hover:scale-115 active:scale-95 transition-transform flex items-center justify-center bg-white border border-slate-200 shadow-xs rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/50 cursor-pointer"
                       title={emoji.name}
                     >
                       {emoji.char}
@@ -320,7 +214,7 @@ export default function CameraCapture({ onPhotoSelected, currentPhotoUrl, onClea
 
         {/* Tab content: CAMERA */}
         {activeTab === 'camera' && (
-          <div className="w-full flex flex-col items-center p-3 relative gap-3">
+          <div className="w-full flex flex-col items-center p-4 relative gap-3">
             {capturedImage || currentPhotoUrl ? (
               <div className="flex flex-col items-center gap-2.5 py-2">
                 <img
@@ -329,73 +223,29 @@ export default function CameraCapture({ onPhotoSelected, currentPhotoUrl, onClea
                   referrerPolicy="no-referrer"
                   className="w-24 h-24 rounded-2xl object-cover border-2 border-white shadow-md ring-1 ring-slate-200"
                 />
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => nativeCameraInputRef.current?.click()}
-                    className="text-xs text-teal-600 font-bold bg-teal-50 px-3 py-1 rounded-lg hover:bg-teal-100 flex items-center gap-1 transition-all cursor-pointer"
-                  >
-                    <Camera className="w-3 h-3" /> Use Phone Camera
-                  </button>
-                  <button
-                    type="button"
-                    onClick={startCamera}
-                    className="text-xs text-slate-600 font-semibold bg-slate-200/80 px-3 py-1 rounded-lg hover:bg-slate-200 flex items-center gap-1 transition-all cursor-pointer"
-                  >
-                    <RefreshCw className="w-3 h-3" /> Live Webcam
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="w-full flex flex-col gap-3">
-                {/* 1. Primary Action: Native Device Camera launcher */}
                 <button
                   type="button"
-                  onClick={() => nativeCameraInputRef.current?.click()}
-                  className="w-full py-3 px-4 bg-teal-600 hover:bg-teal-700 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs hover:shadow-sm active:scale-98 transition-all cursor-pointer"
+                  onClick={handleCapacitorCamera}
+                  className="text-xs text-teal-600 font-bold bg-teal-50 px-3.5 py-1.5 rounded-lg border border-teal-200 hover:bg-teal-100 flex items-center gap-1.5 transition-all cursor-pointer"
                 >
-                  <Camera className="w-4.5 h-4.5" />
+                  <CameraIcon className="w-3.5 h-3.5" /> Retake Photo
+                </button>
+              </div>
+            ) : (
+              <div className="w-full flex flex-col gap-3 py-2 items-center justify-center">
+                <button
+                  type="button"
+                  onClick={handleCapacitorCamera}
+                  className="w-full max-w-[240px] py-3 px-4 bg-teal-600 hover:bg-teal-700 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs hover:shadow-sm active:scale-98 transition-all cursor-pointer"
+                >
+                  <CameraIcon className="w-4.5 h-4.5" />
                   Take Photo with Phone Camera
                 </button>
-
-                {/* Separator / Or Label */}
-                <div className="flex items-center gap-2">
-                  <div className="h-px flex-1 bg-slate-200" />
-                  <span className="text-[10px] text-slate-400 font-bold tracking-wider uppercase">or live in-app feed</span>
-                  <div className="h-px flex-1 bg-slate-200" />
-                </div>
-
-                {/* 2. In-app video element */}
-                {cameraError ? (
-                  <div className="p-3 text-center bg-amber-50 border border-amber-100/70 rounded-xl flex flex-col items-center gap-1.5">
-                    <span className="text-[10px] font-bold text-amber-800">In-App Live Preview Blocked:</span>
-                    <span className="text-[10px] text-amber-700 leading-normal font-medium px-2">
-                      Your current browser or container doesn't support live in-app streaming. Please use the button above to launch your phone camera!
+                {cameraError && (
+                  <div className="p-2 text-center bg-red-50 border border-red-100 rounded-xl flex flex-col items-center gap-1">
+                    <span className="text-[10px] text-red-700 font-semibold leading-normal px-2">
+                      {cameraError}
                     </span>
-                    <button
-                      type="button"
-                      onClick={startCamera}
-                      className="text-[10px] text-teal-700 font-extrabold bg-teal-50 px-2.5 py-1 rounded-md hover:bg-teal-100 transition-all border border-teal-200 cursor-pointer"
-                    >
-                      Retry Live Stream
-                    </button>
-                  </div>
-                ) : (
-                  <div className="w-full flex flex-col items-center relative rounded-xl overflow-hidden border border-slate-200">
-                    <video
-                      ref={videoRef}
-                      playsInline
-                      muted
-                      className="w-full h-28 rounded-xl object-cover bg-black"
-                    />
-                    <button
-                      type="button"
-                      onClick={capturePhoto}
-                      title="Capture from stream"
-                      className="absolute bottom-2.5 left-1/2 -translate-x-1/2 p-2.5 bg-teal-600 text-white rounded-full hover:bg-teal-700 active:scale-90 transition-all shadow-md z-10 border border-white cursor-pointer"
-                    >
-                      <Camera className="w-4.5 h-4.5" />
-                    </button>
                   </div>
                 )}
               </div>
@@ -440,14 +290,6 @@ export default function CameraCapture({ onPhotoSelected, currentPhotoUrl, onClea
               ref={fileInputRef}
               onChange={handleFileUpload}
               accept="image/*"
-              className="hidden"
-            />
-            <input
-              type="file"
-              ref={nativeCameraInputRef}
-              onChange={handleNativeCameraCapture}
-              accept="image/*"
-              capture="environment"
               className="hidden"
             />
           </div>
