@@ -1,4 +1,4 @@
-# LocalCard - Android Grocery List App
+# LocalCart - Android Grocery List App
 
 A modern, highly-polished, local-first grocery list application designed for Android devices. The app works entirely offline, storing all items, custom categories, stores, and product photos safely in local storage with automatic image compression to preserve device space.
 
@@ -23,32 +23,38 @@ Make sure you have the following installed on your development machine:
 
 Capacitor is the modern, official web-to-native bridge by Ionic. It is the easiest way to turn this React project into a true Android application.
 
-#### 1. Build the Production Web App
-First, run the build script to compile the React and Tailwind code into the standard static assets folder (`dist/`):
+#### 1. Install Dependencies
+Before running or building the project on your machine, you must download the required node packages:
+```bash
+npm install
+```
+
+#### 2. Build the Production Web App
+Run the build script to compile the React and Tailwind code into the standard static assets folder (`dist/`):
 ```bash
 npm run build
 ```
 
-#### 2. Install Capacitor Packages
+#### 3. Install Capacitor Packages
 Install the core Capacitor CLI and the Android platform package in your workspace:
 ```bash
 npm install @capacitor/core @capacitor/cli
 ```
 
-#### 3. Initialize Capacitor Config
+#### 4. Initialize Capacitor Config
 Initialize Capacitor with your app name and custom Android package ID:
 ```bash
-npx cap init "LocalCard" "com.localcard.app" --web-dir=dist
+npx cap init "LocalCart" "com.localcart.app" --web-dir=dist
 ```
 
-#### 4. Add the Android Platform
+#### 5. Add the Android Platform
 Install the Capacitor Android runner and add the platform folder:
 ```bash
 npm install @capacitor/android
 npx cap add android
 ```
 
-#### 5. Open in Android Studio & Generate APK
+#### 6. Open in Android Studio & Generate APK
 To compile the actual `.apk` file, sync your compiled assets with the Android directory and open the project inside Android Studio:
 ```bash
 # Sync files
@@ -71,17 +77,18 @@ Once Android Studio opens:
 If you just want to quickly try the app out on your physical Android phone screen without building a full installer, follow these steps:
 
 1. Connect both your computer and your Android phone to the **same Wi-Fi network**.
-2. Find your computer's local IP address (e.g., `192.168.1.50`):
+2. Run `npm install` to download all necessary packages.
+3. Find your computer's local IP address (e.g., `192.168.1.50`):
    - **Mac/Linux:** Open terminal and run `ipconfig` or `ifconfig`.
    - **Windows:** Open command prompt and run `ipconfig`.
-3. Start the Vite development server bound to your local network host:
+4. Start the Vite development server bound to your local network host:
    ```bash
    npm run dev -- --host
    ```
-4. Look at the terminal output. It will show a URL like:
+5. Look at the terminal output. It will show a URL like:
    `http://192.168.1.50:3000`
-5. Open your mobile phone's browser (Chrome, Edge, etc.) and visit that URL.
-6. **Add to Home Screen (PWA):** To make it behave like a native full-screen app, tap the **Three Dots Menu** in Chrome and select **"Add to Home screen"**. It will install a native-feeling standalone launcher icon on your phone!
+6. Open your mobile phone's browser (Chrome, Edge, etc.) and visit that URL.
+7. **Add to Home Screen (PWA):** To make it behave like a native full-screen app, tap the **Three Dots Menu** in Chrome and select **"Add to Home screen"**. It will install a native-feeling standalone launcher icon on your phone!
 
 ---
 

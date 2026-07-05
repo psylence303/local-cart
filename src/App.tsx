@@ -225,7 +225,7 @@ export default function App() {
             <ShoppingBasket className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-slate-900 font-extrabold text-base tracking-tight leading-none">LocalCard</h1>
+            <h1 className="text-slate-900 font-extrabold text-base tracking-tight leading-none">LocalCart</h1>
             <span className="text-[10px] text-slate-400 font-bold tracking-wider uppercase">Local Grocery Tracker</span>
           </div>
         </div>
