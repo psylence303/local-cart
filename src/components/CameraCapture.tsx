@@ -48,7 +48,14 @@ export default function CameraCapture({ onPhotoSelected, currentPhotoUrl, onClea
   const startCamera = async () => {
     setCameraError(null);
     setCapturedImage(null);
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setCameraError('Camera access is not supported by your browser or environment. Try opening the app in a new tab.');
+      return;
+    }
+
     try {
+      // First, try with rear camera (environment) which is ideal for grocery tracking
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } },
         audio: false
@@ -61,8 +68,35 @@ export default function CameraCapture({ onPhotoSelected, currentPhotoUrl, onClea
         });
       }
     } catch (err: any) {
-      console.error('Error starting camera:', err);
-      setCameraError('Could not access camera. Please ensure camera permissions are granted. If you are using the AI Studio preview, you may need to open the app in a new tab.');
+      console.warn('Failed to start camera with environment constraints, trying fallback video: true...', err);
+      try {
+        // Fallback: request any video stream (this works on desktops and standard webcams)
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false
+        });
+        setCameraStream(stream);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(e => {
+            console.error("Video play failed on fallback stream:", e);
+          });
+        }
+      } catch (fallbackErr: any) {
+        console.error('All camera initialization attempts failed:', fallbackErr);
+        let errorMsg = 'Could not access camera. ';
+        
+        if (fallbackErr.name === 'NotAllowedError' || fallbackErr.name === 'PermissionDeniedError') {
+          errorMsg += 'Camera permission was denied. Please allow camera access in your browser settings and retry.';
+        } else if (fallbackErr.name === 'NotFoundError' || fallbackErr.name === 'DevicesNotFoundError') {
+          errorMsg += 'No camera hardware found on this device.';
+        } else if (fallbackErr.name === 'NotReadableError' || fallbackErr.name === 'TrackStartError') {
+          errorMsg += 'Camera is currently in use by another app or browser tab.';
+        } else {
+          errorMsg += `${fallbackErr.message || fallbackErr.name || 'Unknown error'}. Please ensure permissions are granted and open the app in a new tab.`;
+        }
+        setCameraError(errorMsg);
+      }
     }
   };
 
