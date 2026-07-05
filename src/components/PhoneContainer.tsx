@@ -29,9 +29,9 @@ export default function PhoneContainer({ children }: PhoneContainerProps) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-0 md:p-6 transition-colors duration-500 font-sans selection:bg-teal-200">
+    <div className="min-h-screen bg-slate-50 md:bg-slate-900 flex flex-col items-center justify-center p-0 md:p-6 transition-colors duration-500 font-sans selection:bg-teal-200">
       
-      {/* Dynamic Desktop Header controls */}
+      {/* Dynamic Desktop Header controls - ONLY visible on desktop/wide screens */}
       <div className="hidden md:flex items-center justify-between w-full max-w-sm mb-4 text-slate-400 text-xs px-2">
         <div className="flex items-center gap-1.5 font-medium text-slate-300">
           <Smartphone className="w-4.5 h-4.5 text-teal-400" />
@@ -41,7 +41,7 @@ export default function PhoneContainer({ children }: PhoneContainerProps) {
         <div className="flex gap-2">
           <button
             onClick={() => setIsFramed(true)}
-            className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-all ${
+            className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-all cursor-pointer ${
               isFramed 
                 ? 'bg-teal-500/10 text-teal-300 border border-teal-500/20 shadow-sm' 
                 : 'hover:bg-slate-800 text-slate-400'
@@ -52,7 +52,7 @@ export default function PhoneContainer({ children }: PhoneContainerProps) {
           </button>
           <button
             onClick={() => setIsFramed(false)}
-            className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-all ${
+            className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-all cursor-pointer ${
               !isFramed 
                 ? 'bg-teal-500/10 text-teal-300 border border-teal-500/20 shadow-sm' 
                 : 'hover:bg-slate-800 text-slate-400'
@@ -64,24 +64,24 @@ export default function PhoneContainer({ children }: PhoneContainerProps) {
         </div>
       </div>
 
-      {/* Main Container */}
+      {/* Main Container: On mobile (<md), it is always full-screen edge-to-edge. On desktop (>=md), it is framed. */}
       <div
         className={`w-full transition-all duration-300 relative ${
           isFramed
-            ? 'max-w-md h-[880px] rounded-[52px] border-[12px] border-slate-950 bg-slate-950 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] ring-1 ring-slate-800/50 overflow-hidden flex flex-col'
-            : 'max-w-2xl h-screen md:h-[880px] md:rounded-3xl border-0 md:border border-slate-800 bg-slate-950 overflow-hidden flex flex-col shadow-2xl'
+            ? 'h-screen md:h-[880px] max-w-full md:max-w-md md:rounded-[52px] md:border-[12px] md:border-slate-950 md:bg-slate-950 md:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] md:ring-1 md:ring-slate-800/50 overflow-hidden flex flex-col'
+            : 'w-full h-screen md:h-[880px] md:max-w-2xl md:rounded-3xl border-0 md:border md:border-slate-800 bg-slate-950 overflow-hidden flex flex-col shadow-2xl'
         }`}
       >
-        {/* Android Notch Camera - only visible in framed mode */}
+        {/* Android Notch Camera - only visible on wide screens in framed mode */}
         {isFramed && (
-          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 h-7 w-40 bg-slate-950 rounded-b-2xl z-50 flex items-center justify-center gap-1.5">
+          <div className="hidden md:flex absolute top-0 left-1/2 transform -translate-x-1/2 h-7 w-40 bg-slate-950 rounded-b-2xl z-50 items-center justify-center gap-1.5">
             <div className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-800/50 shadow-inner"></div>
             <div className="w-10 h-1.5 rounded-full bg-slate-900 border border-slate-800/30"></div>
           </div>
         )}
 
-        {/* Dynamic Top Android Status Bar */}
-        <div className={`bg-slate-50 border-b border-slate-100 flex items-center justify-between text-slate-700 font-semibold text-xs tracking-tight select-none z-40 transition-all ${
+        {/* Top Android Status Bar - ONLY visible on desktop/wide screens to give Android flavor */}
+        <div className={`hidden md:flex bg-slate-50 border-b border-slate-100 items-center justify-between text-slate-700 font-semibold text-xs tracking-tight select-none z-40 transition-all ${
           isFramed ? 'pt-7.5 pb-2 px-6 h-13' : 'pt-3 pb-2.5 px-6 h-10'
         }`}>
           <span>{currentTime}</span>
@@ -97,12 +97,12 @@ export default function PhoneContainer({ children }: PhoneContainerProps) {
         </div>
 
         {/* Device Screen Frame inner container */}
-        <div className="flex-1 overflow-hidden bg-slate-50 flex flex-col relative">
+        <div className="flex-1 overflow-hidden bg-slate-50 flex flex-col relative h-full">
           {children}
         </div>
 
-        {/* Android Native Home Gesture Bar / Button pill */}
-        <div className="bg-slate-50 border-t border-slate-100/50 h-8 flex items-center justify-center select-none z-40">
+        {/* Android Native Home Gesture Bar - ONLY visible on desktop/wide screens */}
+        <div className="hidden md:flex bg-slate-50 border-t border-slate-100/50 h-8 items-center justify-center select-none z-40 shrink-0">
           <div className="w-32 h-1 rounded-full bg-slate-300 hover:bg-slate-400 active:bg-slate-500 transition-colors cursor-pointer"></div>
         </div>
       </div>
